@@ -1,0 +1,52 @@
+export enum ErrorCode {
+  // General errors
+  INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
+  
+  // Auth errors
+  UNAUTHORIZED = 'UNAUTHORIZED',
+  FORBIDDEN = 'FORBIDDEN',
+  INVALID_API_KEY = 'INVALID_API_KEY',
+  MISSING_API_KEY = 'MISSING_API_KEY',
+  API_KEY_INACTIVE = 'API_KEY_INACTIVE',
+  
+  // Rate limiting
+  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
+  
+  // Resource errors
+  NOT_FOUND = 'NOT_FOUND',
+  ENDPOINT_NOT_FOUND = 'ENDPOINT_NOT_FOUND',
+  RESOURCE_NOT_FOUND = 'RESOURCE_NOT_FOUND',
+  
+  // Request errors
+  BAD_REQUEST = 'BAD_REQUEST',
+  INVALID_INPUT = 'INVALID_INPUT',
+  
+  // Service errors
+  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
+  EXTERNAL_API_ERROR = 'EXTERNAL_API_ERROR',
+  TRANSLATION_ERROR = 'TRANSLATION_ERROR',
+  TONE_ANALYSIS_ERROR = 'TONE_ANALYSIS_ERROR',
+  RESPONSE_GENERATION_ERROR = 'RESPONSE_GENERATION_ERROR',
+}
+
+export function getErrorCodeFromStatus(status: number): ErrorCode {
+  switch (status) {
+    case 400:
+      return ErrorCode.BAD_REQUEST;
+    case 401:
+      return ErrorCode.UNAUTHORIZED;
+    case 403:
+      return ErrorCode.FORBIDDEN;
+    case 404:
+      return ErrorCode.NOT_FOUND;
+    case 429:
+      return ErrorCode.RATE_LIMIT_EXCEEDED;
+    case 503:
+      return ErrorCode.SERVICE_UNAVAILABLE;
+    default:
+      return ErrorCode.INTERNAL_SERVER_ERROR;
+  }
+}

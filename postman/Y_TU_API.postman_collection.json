@@ -1,0 +1,1480 @@
+{
+	"info": {
+		"_postman_id": "ytu-api-collection-2024",
+		"name": "Y TU API - Complete Collection",
+		"description": "Comprehensive Postman collection for Y TU API - AI Translation and Human Tone Authentication API\n\n## Features\n- Translation services\n- Tone analysis\n- AI response generation\n- Full processing pipeline\n- API key management\n- Usage metrics\n\n## Setup\n1. Import this collection\n2. Create an environment with:\n   - `api_url`: Your API base URL (e.g., http://localhost:3000)\n   - `api_key`: Your API key\n3. Select the environment\n4. Start testing!\n\n## Rate Limits\n- FREE: 100 requests/day\n- STARTER: 1,000 requests/day\n- PRO: 10,000 requests/day\n- ENTERPRISE: Unlimited",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success field\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Response has metadata\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('metadata');",
+									"    pm.expect(jsonData.metadata).to.have.property('requestId');",
+									"    pm.expect(jsonData.metadata).to.have.property('timestamp');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_url}}/api/v1/health",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"health"
+							]
+						},
+						"description": "Check API health status. No authentication required."
+					},
+					"response": []
+				},
+				{
+					"name": "Get API Key Tiers",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains tier information\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    pm.expect(jsonData.data.length).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_url}}/api/v1/api-keys/tiers",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"api-keys",
+								"tiers"
+							]
+						},
+						"description": "Get information about available API key tiers and their rate limits. No authentication required."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication and system status endpoints"
+		},
+		{
+			"name": "Translation",
+			"item": [
+				{
+					"name": "Translate Text - English to Spanish",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Set API key header",
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response structure is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('translatedText');",
+									"    pm.expect(jsonData.data).to.have.property('sourceLanguage');",
+									"    pm.expect(jsonData.data).to.have.property('targetLanguage');",
+									"    pm.expect(jsonData.data).to.have.property('confidence');",
+									"});",
+									"",
+									"pm.test(\"Translation confidence is reasonable\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.confidence).to.be.above(0.7);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"Hello, how can I help you today?\",\n    \"targetLanguage\": \"es\",\n    \"sourceLanguage\": \"en\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/translate",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"translate"
+							]
+						},
+						"description": "Translate text from English to Spanish. Customer service example."
+					},
+					"response": []
+				},
+				{
+					"name": "Translate Text - English to French (E-commerce)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"French translation received\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.targetLanguage).to.equal('fr');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"This product is currently out of stock. We will notify you when it becomes available.\",\n    \"targetLanguage\": \"fr\",\n    \"sourceLanguage\": \"en\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/translate",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"translate"
+							]
+						},
+						"description": "E-commerce use case: Translate product availability message to French."
+					},
+					"response": []
+				},
+				{
+					"name": "Translate Text - English to German",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"Thank you for your purchase. Your order will be shipped within 2-3 business days.\",\n    \"targetLanguage\": \"de\",\n    \"sourceLanguage\": \"en\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/translate",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"translate"
+							]
+						},
+						"description": "Translate order confirmation message to German."
+					},
+					"response": []
+				},
+				{
+					"name": "Translate Text - English to Chinese (Simplified)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"We appreciate your feedback and will use it to improve our services.\",\n    \"targetLanguage\": \"zh\",\n    \"sourceLanguage\": \"en\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/translate",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"translate"
+							]
+						},
+						"description": "Translate feedback acknowledgment to Simplified Chinese."
+					},
+					"response": []
+				},
+				{
+					"name": "Translate Text - English to Japanese",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"Your subscription has been successfully renewed. You will continue to have access to all premium features.\",\n    \"targetLanguage\": \"ja\",\n    \"sourceLanguage\": \"en\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/translate",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"translate"
+							]
+						},
+						"description": "Translate subscription renewal message to Japanese."
+					},
+					"response": []
+				},
+				{
+					"name": "Detect Language",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Language detected\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('language');",
+									"    pm.expect(jsonData.data).to.have.property('confidence');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"Bonjour, comment allez-vous aujourd'hui?\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/languages/detect",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"languages",
+								"detect"
+							]
+						},
+						"description": "Detect the language of the provided text."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Supported Languages",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Languages list returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    pm.expect(jsonData.data.length).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_url}}/api/v1/languages",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"languages"
+							]
+						},
+						"description": "Get list of all supported languages for translation."
+					},
+					"response": []
+				}
+			],
+			"description": "Translation endpoints for multi-language support"
+		},
+		{
+			"name": "Tone Analysis",
+			"item": [
+				{
+					"name": "Analyze Tone - Customer Complaint",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Tone analysis structure is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('toneScore');",
+									"    pm.expect(jsonData.data).to.have.property('emotion');",
+									"    pm.expect(jsonData.data).to.have.property('urgency');",
+									"    pm.expect(jsonData.data).to.have.property('intent');",
+									"});",
+									"",
+									"pm.test(\"Tone score is in valid range\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.toneScore).to.be.within(0, 100);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"I am extremely disappointed with the service quality. This is completely unacceptable and I demand a full refund immediately.\",\n    \"language\": \"en\",\n    \"context\": \"Customer service complaint\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/analyze-tone",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"analyze-tone"
+							]
+						},
+						"description": "Analyze tone of a customer complaint. Expected: negative emotion, high urgency, complaint intent."
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze Tone - Customer Question",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"Could you please help me understand your return policy? I'm not sure if I can return this item after 30 days.\",\n    \"language\": \"en\",\n    \"context\": \"E-commerce customer inquiry\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/analyze-tone",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"analyze-tone"
+							]
+						},
+						"description": "Analyze tone of a customer question. Expected: neutral emotion, low urgency, question intent."
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze Tone - Positive Feedback",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"Thank you so much! The product exceeded my expectations and the delivery was incredibly fast. I will definitely order again!\",\n    \"language\": \"en\",\n    \"context\": \"Product review\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/analyze-tone",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"analyze-tone"
+							]
+						},
+						"description": "Analyze tone of positive feedback. Expected: positive emotion, low urgency, feedback intent."
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze Tone - Spanish Text",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"Necesito cancelar mi suscripción de inmediato. El servicio no cumple con mis expectativas.\",\n    \"language\": \"es\",\n    \"context\": \"SaaS customer service\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/analyze-tone",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"analyze-tone"
+							]
+						},
+						"description": "Analyze tone of Spanish text. Demonstrates multilingual tone analysis."
+					},
+					"response": []
+				}
+			],
+			"description": "Tone analysis endpoints for sentiment and authenticity detection"
+		},
+		{
+			"name": "Response Generation",
+			"item": [
+				{
+					"name": "Generate Response - Empathetic (Customer Service)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response generated successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('response');",
+									"    pm.expect(jsonData.data).to.have.property('score');",
+									"    pm.expect(jsonData.data).to.have.property('alternatives');",
+									"});",
+									"",
+									"pm.test(\"Response score is reasonable\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.score).to.be.within(0, 100);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"originalText\": \"I need to return this product, it arrived damaged.\",\n    \"context\": \"E-commerce customer service\",\n    \"tone\": \"empathetic\",\n    \"language\": \"en\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/generate-response",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"generate-response"
+							]
+						},
+						"description": "Generate an empathetic response for a customer service scenario."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Response - Professional (Business Email)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"originalText\": \"When will my order be shipped? I placed it three days ago.\",\n    \"context\": \"E-commerce order inquiry\",\n    \"tone\": \"professional\",\n    \"language\": \"en\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/generate-response",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"generate-response"
+							]
+						},
+						"description": "Generate a professional business email response."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Response - Friendly (Customer Support)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"originalText\": \"Thanks for the quick response! I really appreciate your help.\",\n    \"context\": \"Customer support follow-up\",\n    \"tone\": \"friendly\",\n    \"language\": \"en\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/generate-response",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"generate-response"
+							]
+						},
+						"description": "Generate a friendly customer support response."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Response - Multilingual (Spanish)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"originalText\": \"¿Cuál es su política de devolución?\",\n    \"context\": \"Customer service\",\n    \"tone\": \"friendly\",\n    \"language\": \"es\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/generate-response",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"generate-response"
+							]
+						},
+						"description": "Generate response in Spanish. Demonstrates multilingual response generation."
+					},
+					"response": []
+				}
+			],
+			"description": "AI-powered response generation endpoints"
+		},
+		{
+			"name": "Full Processing Pipeline",
+			"item": [
+				{
+					"name": "Process - Full Pipeline (Translate + Analyze + Generate)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Full processing completed\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('translation');",
+									"    pm.expect(jsonData.data).to.have.property('toneAnalysis');",
+									"    pm.expect(jsonData.data).to.have.property('generatedResponse');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"I want to cancel my subscription immediately. The service doesn't meet my needs.\",\n    \"sourceLanguage\": \"en\",\n    \"targetLanguage\": \"es\",\n    \"context\": \"SaaS customer service\",\n    \"options\": {\n        \"translate\": true,\n        \"analyzeTone\": true,\n        \"generateResponse\": true\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/process",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"process"
+							]
+						},
+						"description": "Full processing pipeline: translate, analyze tone, and generate response in one request."
+					},
+					"response": []
+				},
+				{
+					"name": "Process - Translation Only",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"Thank you for your purchase. Your order confirmation will be sent via email.\",\n    \"sourceLanguage\": \"en\",\n    \"targetLanguage\": \"fr\",\n    \"options\": {\n        \"translate\": true,\n        \"analyzeTone\": false,\n        \"generateResponse\": false\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/process",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"process"
+							]
+						},
+						"description": "Process only translation, skip tone analysis and response generation."
+					},
+					"response": []
+				},
+				{
+					"name": "Process - Tone Analysis Only",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"This service is terrible! I want a full refund immediately!\",\n    \"context\": \"Customer complaint\",\n    \"options\": {\n        \"translate\": false,\n        \"analyzeTone\": true,\n        \"generateResponse\": false\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/process",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"process"
+							]
+						},
+						"description": "Process only tone analysis, skip translation and response generation."
+					},
+					"response": []
+				}
+			],
+			"description": "All-in-one processing endpoints"
+		},
+		{
+			"name": "API Key Management",
+			"item": [
+				{
+					"name": "List API Keys",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"API keys list returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_url}}/api/v1/api-keys",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"api-keys"
+							]
+						},
+						"description": "List all API keys for the authenticated user."
+					},
+					"response": []
+				},
+				{
+					"name": "Create API Key - FREE Tier",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"API key created\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('key');",
+									"    pm.expect(jsonData.data.tier).to.equal('FREE');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Free Tier Test Key\",\n    \"tier\": \"FREE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/api-keys",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"api-keys"
+							]
+						},
+						"description": "Create a new API key with FREE tier (100 requests/day)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create API Key - PRO Tier",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Production API Key\",\n    \"tier\": \"PRO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}/api/v1/api-keys",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"api-keys"
+							]
+						},
+						"description": "Create a new API key with PRO tier (10,000 requests/day)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get API Key Usage",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Usage data returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('requestCount');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_url}}/api/v1/api-keys/:id/usage?date=2023-12-21",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"api-keys",
+								":id",
+								"usage"
+							],
+							"query": [
+								{
+									"key": "date",
+									"value": "2023-12-21",
+									"description": "Date in YYYY-MM-DD format"
+								}
+							]
+						},
+						"description": "Get usage statistics for a specific API key. Replace :id with your API key ID."
+					},
+					"response": []
+				}
+			],
+			"description": "API key management endpoints"
+		},
+		{
+			"name": "Metrics",
+			"item": [
+				{
+					"name": "Get Usage Metrics",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.request.headers.add({",
+									"    key: 'X-API-Key',",
+									"    value: pm.environment.get('api_key')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Metrics data returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('apiKeyId');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_url}}/api/v1/metrics/usage?startDate=2023-12-01&endDate=2023-12-31",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"metrics",
+								"usage"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2023-12-01",
+									"description": "Start date (YYYY-MM-DD)"
+								},
+								{
+									"key": "endDate",
+									"value": "2023-12-31",
+									"description": "End date (YYYY-MM-DD)"
+								}
+							]
+						},
+						"description": "Get usage metrics for the authenticated API key. Optionally filter by date range."
+					},
+					"response": []
+				}
+			],
+			"description": "Usage metrics and statistics endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"// This runs before every request",
+					"",
+					"// Log request details",
+					"console.log('Making request to:', pm.request.url.toString());",
+					"",
+					"// Check if API key is set",
+					"if (!pm.environment.get('api_key') && pm.request.url.toString().includes('/api/v1/')) {",
+					"    console.warn('API key not set in environment. Some requests may fail.');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"// This runs after every request",
+					"",
+					"// Check rate limit headers",
+					"if (pm.response.headers.has('X-RateLimit-Remaining')) {",
+					"    var remaining = pm.response.headers.get('X-RateLimit-Remaining');",
+					"    console.log('Rate limit remaining:', remaining);",
+					"    ",
+					"    if (parseInt(remaining) < 10) {",
+					"        console.warn('Warning: Rate limit is running low!');",
+					"    }",
+					"}",
+					"",
+					"// Log response time",
+					"pm.test('Response time is reasonable', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "api_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "api_key",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
