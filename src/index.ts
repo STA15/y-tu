@@ -22,16 +22,23 @@ import v1Routes from './routes/v1';
 import authRoutes from './routes/auth.routes';
 import { logger } from './utils/logger';
 
+console.log('✅ 1. All imports loaded successfully');
+
 // Initialize Sentry for error tracking (before app initialization)
 if (process.env.SENTRY_DSN) {
+  console.log('🔧 Initializing Sentry...');
   initSentry();
 }
 
+console.log('✅ 2. About to create Express app');
 const app: Application = express();
+console.log('✅ 3. Express app created');
 
 // ============================================
 // Security Middleware (Order Matters!)
 // ============================================
+
+console.log('🔧 4. Applying middleware...');
 
 // 0. Request ID and timing (very first)
 app.use(requestStartTimeMiddleware);
@@ -97,6 +104,8 @@ app.use(csrfMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+console.log('✅ 5. All middleware applied');
+
 // Root health check (backward compatibility)
 app.get('/health', (req: Request, res: Response) => {
   sendSuccess(req, res, {
@@ -107,10 +116,20 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
+console.log('✅ 6. Health check route registered');
+
 // API routes - versioned
+console.log('🔧 7. Loading routes...');
 const apiBasePath = getApiBasePath();
+console.log('✅ 8. API base path:', apiBasePath);
+
+console.log('🔧 9. Loading v1 routes...');
 app.use(apiBasePath, v1Routes);
+console.log('✅ 10. V1 routes loaded');
+
+console.log('🔧 11. Loading auth routes...');
 app.use(`${apiBasePath}/auth`, authRoutes);
+console.log('✅ 12. Auth routes loaded');
 
 // 404 handler
 app.use(notFoundHandler);
@@ -121,31 +140,36 @@ app.use(errorLogger);
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
+console.log('✅ 13. All routes and error handlers registered');
+
 // Start server
-// In development/test: always start
-// In production: only start if this is the main module (not imported)
-// Start server
-// In development/test: always start
-// In production: only start if this is the main module (not imported)
+console.log('🔧 14. Preparing to start server...');
+console.log('🔧 15. isDevelopment():', isDevelopment());
+console.log('🔧 16. require.main === module:', require.main === module);
+
 if (isDevelopment() || require.main === module) {
+  console.log('✅ 17. Starting server on port', config.server.port);
+  
   const server = app.listen(config.server.port, () => {
-    logger.info(`Server is running on port ${config.server.port}`);
-    logger.info(`Environment: ${config.server.nodeEnv}`);
-    logger.info(`API Version: ${config.server.apiVersion}`);
-    logger.info(`API Base Path: ${apiBasePath}`);
+    console.log('✅ 18. Server started successfully!');
+    logger.info(`✅ Server is running on port ${config.server.port}`);
+    logger.info(`📍 Environment: ${config.server.nodeEnv}`);
+    logger.info(`🔖 API Version: ${config.server.apiVersion}`);
+    logger.info(`🌐 API Base Path: ${apiBasePath}`);
     
     if (isDevelopment()) {
-      logger.info(`Health check: http://localhost:${config.server.port}/health`);
-      logger.info(`API endpoints: http://localhost:${config.server.port}${apiBasePath}`);
+      logger.info(`❤️  Health check: http://localhost:${config.server.port}/health`);
+      logger.info(`🚀 API endpoints: http://localhost:${config.server.port}${apiBasePath}`);
     }
   }).on('error', (error: any) => {
+    console.error('❌ 19. Server error occurred:', error.message);
     if (error.code === 'EADDRINUSE') {
-      logger.error(`Port ${config.server.port} is already in use`);
-      console.error(`\nERROR: Port ${config.server.port} is already in use!`);
+      logger.error(`❌ Port ${config.server.port} is already in use`);
+      console.error(`\n❌ ERROR: Port ${config.server.port} is already in use!`);
       console.error(`Try changing PORT in your .env file or kill the process using this port.\n`);
     } else {
-      logger.error('Server error', { error: error.message, stack: error.stack });
-      console.error('\nFATAL SERVER ERROR:', error);
+      logger.error('❌ Server error', { error: error.message, stack: error.stack });
+      console.error('\n❌ FATAL SERVER ERROR:', error);
     }
     process.exit(1);
   });
@@ -165,6 +189,10 @@ if (isDevelopment() || require.main === module) {
       process.exit(0);
     });
   });
+} else {
+  console.log('ℹ️  17. Skipping server start (module imported, not run directly)');
 }
+
+console.log('✅ 20. index.ts execution complete');
 
 export default app;
