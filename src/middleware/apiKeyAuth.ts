@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ApiKey } from '../models/apiKey.model';
+import { ApiKey, ApiKeyTier } from '../models/apiKey.model';
 import { apiKeyStore } from '../services/apiKeyStore.service';
 import { AppError } from './errorHandler';
 import { logger } from '../utils/logger';
@@ -9,10 +9,18 @@ import { logger } from '../utils/logger';
  */
 export interface ApiKeyRequest extends Request {
   apiKey?: ApiKey;
-  // Remove the user property - it's now defined globally in express.d.ts
+  user?: {
+    [key: string]: any;
+    id: string;
+    email?: string;
+    tier?: ApiKeyTier | string;
+    apiKey?: string;
+    apiKeyId?: string;
+    apiKeyName?: string;
+    rapidapiUser?: string;
+    rapidapiSubscription?: string;
+  };
 }
-
-// Rest of the file stays the same...
 
 /**
  * Extract API key from request headers

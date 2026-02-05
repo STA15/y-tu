@@ -1,5 +1,5 @@
 import { Router, IRouter } from 'express';
-import { responseController } from '../../controllers/response.controller';
+import { generateResponseController } from '../../controllers/generate-response.controller';
 import { authenticate } from '../../middleware/authentication';
 import { tieredRateLimiter } from '../../middleware/tieredRateLimiter';
 import { validate } from '../../middleware/validation';
@@ -112,7 +112,7 @@ router.post(
   authenticate,
   tieredRateLimiter,
   validate(generateResponseValidationSchema()),
-  responseController.generateResponse
+  generateResponseController.generate.bind(generateResponseController)
 );
 
 export default router;

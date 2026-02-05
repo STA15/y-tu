@@ -1,7 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/authentication';
 import { toneAnalysisService } from '../services/toneAnalysis.service';
-import { toneAuthService } from '../services/toneAuth.service';
 import { AppError } from '../middleware/errorHandler';
 import { sendSuccess } from '../utils/response';
 
@@ -60,14 +59,15 @@ class AnalyzeToneController {
 
       sendSuccess(req, res, result);
     } catch (error) {
-      // Fallback to legacy service
-      const result = await toneAuthService.authenticateTone({
-        text: req.body.text,
-        userId: req.user?.id
-      });
-
-      sendSuccess(req, res, result);
+      next(error instanceof AppError ? error : new AppError('Tone authentication failed', 500));
     }
+  }
+
+  /**
+   * Alias for analyze method
+   */
+  async analyzeTone(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    return this.analyze(req, res, next);
   }
 }
 

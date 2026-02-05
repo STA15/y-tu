@@ -1,5 +1,4 @@
 import winston from 'winston';
-import DailyRotateFile from 'winston-daily-rotate-file';
 import path from 'path';
 import fs from 'fs';
 
@@ -14,12 +13,12 @@ export enum LogLevel {
 }
 
 /**
- * Log directory
+ * Log directory (for local development only)
  */
 const logDir = process.env.LOG_DIR || path.join(process.cwd(), 'logs');
 
-// Ensure log directory exists
-if (!fs.existsSync(logDir)) {
+// Ensure log directory exists (local development only)
+if (process.env.NODE_ENV === 'development' && !fs.existsSync(logDir)) {
   try {
     fs.mkdirSync(logDir, { recursive: true });
   } catch (error) {
@@ -73,43 +72,24 @@ const createTransports = (): winston.transport[] => {
     })
   );
 
-  // File transports (only in production or if LOG_TO_FILE is enabled)
-  if (process.env.NODE_ENV === 'production' || process.env.LOG_TO_FILE === 'true') {
-    // Error log file
+  // File transport for local development only (Vercel handles logs in production)
+  if (process.env.NODE_ENV === 'development' && process.env.LOG_TO_FILE === 'true') {
     transports.push(
-      new DailyRotateFile({
-        filename: path.join(logDir, 'error-%DATE%.log'),
-        datePattern: 'YYYY-MM-DD',
+      new winston.transports.File({
+        filename: path.join(logDir, 'error.log'),
         level: 'error',
         format: jsonFormat,
-        maxSize: '20m',
-        maxFiles: '30d',
-        zippedArchive: true,
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
       })
     );
 
-    // Combined log file
     transports.push(
-      new DailyRotateFile({
-        filename: path.join(logDir, 'combined-%DATE%.log'),
-        datePattern: 'YYYY-MM-DD',
+      new winston.transports.File({
+        filename: path.join(logDir, 'combined.log'),
         format: jsonFormat,
-        maxSize: '20m',
-        maxFiles: '30d',
-        zippedArchive: true,
-      })
-    );
-
-    // Request log file
-    transports.push(
-      new DailyRotateFile({
-        filename: path.join(logDir, 'requests-%DATE%.log'),
-        datePattern: 'YYYY-MM-DD',
-        level: 'info',
-        format: jsonFormat,
-        maxSize: '20m',
-        maxFiles: '14d',
-        zippedArchive: true,
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
       })
     );
   }
@@ -129,25 +109,6 @@ const winstonLogger = winston.createLogger({
     version: process.env.API_VERSION || 'v1',
   },
   transports: createTransports(),
-  // Handle exceptions and rejections
-  exceptionHandlers: [
-    new DailyRotateFile({
-      filename: path.join(logDir, 'exceptions-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      format: jsonFormat,
-      maxSize: '20m',
-      maxFiles: '30d',
-    }),
-  ],
-  rejectionHandlers: [
-    new DailyRotateFile({
-      filename: path.join(logDir, 'rejections-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      format: jsonFormat,
-      maxSize: '20m',
-      maxFiles: '30d',
-    }),
-  ],
 });
 
 /**

@@ -9,6 +9,8 @@ declare global {
         email?: string;
         tier?: ApiKeyTier | string;
         apiKey?: string;
+        apiKeyId?: string;
+        apiKeyName?: string;
         rapidapiUser?: string;
         rapidapiSubscription?: string;
       };
@@ -28,12 +30,6 @@ declare global {
         subscription?: string;
         tier: ApiKeyTier;
       };
-
-      /**
-       * CSRF token generator (added by csurf middleware)
-       * Only available after csurf middleware has processed the request
-       */
-      csrfToken?: () => string;
     }
   }
 }

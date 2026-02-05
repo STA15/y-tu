@@ -1,5 +1,5 @@
 import { Router, IRouter } from 'express';
-import { toneAnalysisController } from '../../controllers/toneAnalysis.controller';
+import { analyzeToneController } from '../../controllers/analyze-tone.controller';
 import { authenticate } from '../../middleware/authentication';
 import { tieredRateLimiter } from '../../middleware/tieredRateLimiter';
 import { validate } from '../../middleware/validation';
@@ -105,7 +105,7 @@ router.post(
   authenticate,
   tieredRateLimiter,
   validate(analyzeToneValidationSchema()),
-  toneAnalysisController.analyzeTone
+  analyzeToneController.analyzeTone.bind(analyzeToneController)
 );
 
 export default router;

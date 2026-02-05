@@ -1,89 +1,134 @@
 import { Request, Response, NextFunction } from 'express';
-import { sendAppError } from '../utils/response';
-import { ErrorCode, getErrorCodeFromStatus } from './errorCodes';
 import { logger } from '../utils/logger';
-import { captureException, setContext } from '../utils/sentry';
+import { sendError } from '../utils/response';
+import { ErrorCode } from './errorCodes';
 
-export interface ApiError extends Error {
-  statusCode?: number;
-  isOperational?: boolean;
-  code?: ErrorCode | string;
-  details?: any;
+/**
+ * Custom application error class
+ */
+export class AppError extends Error {
+  public statusCode: number;
+  public isOperational: boolean;
+  public code?: string;
+
+  constructor(message: string, statusCode: number = 500, isOperational: boolean = true) {
+    super(message);
+    this.statusCode = statusCode;
+    this.isOperational = isOperational;
+    this.name = this.constructor.name;
+    Error.captureStackTrace(this, this.constructor);
+  }
 }
 
+/**
+ * Global error handling middleware
+ */
 export const errorHandler = (
-  err: ApiError,
+  err: Error | AppError,
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  const code = err.code || getErrorCodeFromStatus(statusCode);
+  // Default error values
+  let statusCode = 500;
+  let message = 'Internal server error';
+  let errorCode: ErrorCode = ErrorCode.INTERNAL_ERROR;
+  let isOperational = false;
 
-  // Log error for debugging
-  logger.error('Error handler', {
+  // Handle AppError instances
+  if (err instanceof AppError) {
+    statusCode = err.statusCode;
+    message = err.message;
+    isOperational = err.isOperational;
+    
+    // Map status code to error code
+    errorCode = getErrorCodeFromStatus(statusCode);
+  }
+
+  // Log error details
+  const errorDetails = {
     message: err.message,
-    code,
+    stack: err.stack,
     statusCode,
     path: req.path,
     method: req.method,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+    isOperational,
+  };
 
-  // Send to Sentry for non-operational errors or 5xx errors
-  if (!err.isOperational || statusCode >= 500) {
-    setContext('request', {
-      method: req.method,
-      path: req.path,
-      query: req.query,
-      headers: {
-        'user-agent': req.headers['user-agent'],
-        'x-api-key': req.headers['x-api-key'] ? '***' : undefined,
-      },
-    });
-    
-    if (req.user) {
-      setContext('user', {
-        id: req.user.id,
-        tier: req.user.tier,
-      });
-    }
-    
-    captureException(err, {
-      error: {
-        code,
-        statusCode,
-        details: err.details,
-      },
-    });
+  // Log based on severity
+  if (statusCode >= 500) {
+    logger.error('Server error occurred', errorDetails);
+  } else if (statusCode >= 400) {
+    logger.warn('Client error occurred', errorDetails);
   }
 
-  // Send standardized error response
-  sendAppError(req, res, {
-    message,
-    statusCode,
-    code
-  }, err.details);
+  // Don't expose internal errors in production
+  if (process.env.NODE_ENV === 'production' && statusCode === 500 && !isOperational) {
+    message = 'An unexpected error occurred';
+  }
+
+  // Send error response (errorCode, message, statusCode order)
+  sendError(req, res, errorCode, message, statusCode, {
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
 };
 
-export class AppError extends Error implements ApiError {
-  statusCode: number;
-  isOperational: boolean;
-  code?: ErrorCode | string;
-  details?: any;
-
-  constructor(
-    message: string,
-    statusCode: number = 500,
-    code?: ErrorCode | string,
-    details?: any
-  ) {
-    super(message);
-    this.statusCode = statusCode;
-    this.isOperational = true;
-    this.code = code || getErrorCodeFromStatus(statusCode);
-    this.details = details;
-    Error.captureStackTrace(this, this.constructor);
+/**
+ * Map HTTP status code to ErrorCode enum
+ */
+function getErrorCodeFromStatus(statusCode: number): ErrorCode {
+  switch (statusCode) {
+    case 400:
+      return ErrorCode.VALIDATION_ERROR;
+    case 401:
+      return ErrorCode.UNAUTHORIZED;
+    case 403:
+      return ErrorCode.FORBIDDEN;
+    case 404:
+      return ErrorCode.NOT_FOUND;
+    case 429:
+      return ErrorCode.RATE_LIMIT_EXCEEDED;
+    case 503:
+      return ErrorCode.SERVICE_UNAVAILABLE;
+    default:
+      return ErrorCode.INTERNAL_ERROR;
   }
 }
+
+/**
+ * Async error wrapper for route handlers
+ */
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
+) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
+
+/**
+ * Handle unhandled promise rejections
+ */
+process.on('unhandledRejection', (reason: Error | any) => {
+  logger.error('Unhandled Promise Rejection', {
+    reason: reason?.message || reason,
+    stack: reason?.stack,
+  });
+  // Don't exit process - let PM2 or container orchestration handle restarts
+});
+
+/**
+ * Handle uncaught exceptions
+ */
+process.on('uncaughtException', (error: Error) => {
+  logger.error('Uncaught Exception', {
+    message: error.message,
+    stack: error.stack,
+  });
+  // Give time for logs to flush, then exit
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});

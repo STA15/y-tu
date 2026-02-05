@@ -1,6 +1,6 @@
 import { AppError } from '../middleware/errorHandler';
 import { translationService } from './translation.service';
-import { toneAuthService } from './toneAuth.service';
+import { toneAnalysisService } from './toneAnalysis.service';
 import { generateResponseService } from './generateResponse.service';
 import { logger } from '../utils/logger';
 
@@ -82,14 +82,19 @@ class ProcessService {
       // Perform tone analysis if requested
       if (shouldAnalyzeTone) {
         try {
-          const toneAnalysis = await toneAuthService.authenticateTone({
+          const toneAnalysis = await toneAnalysisService.analyzeTone({
             text: processedText,
             userId
           });
+          
           result.toneAnalysis = {
-            isHuman: toneAnalysis.isHuman,
-            confidence: toneAnalysis.confidence,
-            analysis: toneAnalysis.analysis
+            isHuman: toneAnalysis.toneScore >= 70,
+            confidence: toneAnalysis.toneScore / 100,
+            analysis: {
+              naturalness: toneAnalysis.detailedAnalysis.naturalness / 100,
+              coherence: toneAnalysis.detailedAnalysis.contextRelevance / 100,
+              emotionalMarkers: toneAnalysis.detailedAnalysis.emotionalAppropriateness / 100
+            }
           };
         } catch (error) {
           logger.error('Tone analysis failed in process service', { error });
@@ -100,16 +105,16 @@ class ProcessService {
       if (shouldGenerateResponse) {
         try {
           const toneAnalysisResult = result.toneAnalysis ? {
-            toneScore: result.toneAnalysis.analysis.naturalness,
+            toneScore: result.toneAnalysis.analysis.naturalness * 100,
             formality: 5,
             emotion: 'neutral' as const,
             urgency: 'medium' as const,
             intent: 'other' as const,
             suggestions: [],
             detailedAnalysis: {
-              naturalness: result.toneAnalysis.analysis.naturalness,
-              emotionalAppropriateness: result.toneAnalysis.analysis.emotionalMarkers,
-              contextRelevance: result.toneAnalysis.analysis.coherence,
+              naturalness: result.toneAnalysis.analysis.naturalness * 100,
+              emotionalAppropriateness: result.toneAnalysis.analysis.emotionalMarkers * 100,
+              contextRelevance: result.toneAnalysis.analysis.coherence * 100,
               culturalAppropriateness: 75
             },
             timestamp: new Date().toISOString()
