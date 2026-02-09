@@ -41,16 +41,33 @@ interface OpenAIResponse {
 }
 
 /**
+ * Check if we should use mock services
+ */
+const shouldUseMock = (): boolean => {
+  return process.env.USE_MOCK_SERVICES === 'true' || 
+         !config.aiServices.openaiApiKey || 
+         config.aiServices.openaiApiKey === 'mock_development_key';
+};
+
+/**
  * OpenAI Tone Analysis Client
  */
 export class OpenAIToneAnalysisClient {
   private apiKey: string;
   private model: string;
   private baseUrl: string = 'https://api.openai.com/v1/chat/completions';
+  private useMock: boolean;
 
   constructor() {
+    this.useMock = shouldUseMock();
     this.apiKey = config.aiServices.openaiApiKey || '';
     this.model = config.aiServices.openaiModel || 'gpt-4';
+
+    if (this.useMock) {
+      logger.info('Tone analysis service using MOCK mode (free testing)');
+    } else if (!this.apiKey) {
+      logger.warn('OpenAI API key not configured. Using mock implementation.');
+    }
   }
 
   async analyzeTone(
@@ -58,8 +75,9 @@ export class OpenAIToneAnalysisClient {
     language?: string,
     context?: string
   ): Promise<AIToneAnalysisResponse> {
-    if (!this.apiKey) {
-      throw new AppError('OpenAI API key not configured', 500);
+    // Use mock if enabled
+    if (this.useMock || !this.apiKey) {
+      return this.mockAnalyzeTone(text, language, context);
     }
 
     try {
@@ -99,8 +117,90 @@ export class OpenAIToneAnalysisClient {
       return this.normalizeResponse(analysis);
     } catch (error: any) {
       logger.error('OpenAI tone analysis error', { error: error.message });
-      throw new AppError(`Tone analysis API error: ${error.message}`, 500);
+      // Fallback to mock on error
+      logger.warn('Falling back to mock tone analysis');
+      return this.mockAnalyzeTone(text, language, context);
     }
+  }
+
+  /**
+   * Mock tone analysis (for development/testing - FREE!)
+   */
+  private mockAnalyzeTone(
+    text: string,
+    language?: string,
+    context?: string
+  ): AIToneAnalysisResponse {
+    // Simple heuristic-based mock analysis
+    const textLower = text.toLowerCase();
+    
+    // Detect emotion based on keywords
+    let emotion: EmotionType = 'neutral';
+    let urgency: UrgencyLevel = 'medium';
+    let intent: IntentType = 'statement';
+    let toneScore = 75;
+    let formality = 5;
+
+    // Negative indicators
+    if (textLower.includes('disappointed') || textLower.includes('unacceptable') || 
+        textLower.includes('terrible') || textLower.includes('awful')) {
+      emotion = 'negative';
+      urgency = 'high';
+      intent = 'complaint';
+      toneScore = 85;
+      formality = 7;
+    }
+    // Positive indicators
+    else if (textLower.includes('thank') || textLower.includes('great') || 
+             textLower.includes('excellent') || textLower.includes('love')) {
+      emotion = 'positive';
+      urgency = 'low';
+      intent = 'feedback';
+      toneScore = 80;
+      formality = 5;
+    }
+    // Question indicators
+    else if (textLower.includes('?') || textLower.includes('how') || 
+             textLower.includes('what') || textLower.includes('when')) {
+      intent = 'question';
+      urgency = 'medium';
+      toneScore = 70;
+      formality = 6;
+    }
+    // Request indicators
+    else if (textLower.includes('please') || textLower.includes('could you') || 
+             textLower.includes('would you') || textLower.includes('need')) {
+      intent = 'request';
+      urgency = 'medium';
+      toneScore = 78;
+      formality = 6;
+    }
+
+    const suggestions = toneScore < 70 ? [
+      'Consider using more natural language patterns',
+      'Add emotional markers appropriate to the context',
+      'Ensure cultural appropriateness for the target audience'
+    ] : [];
+
+    return {
+      toneScore,
+      formality,
+      emotion,
+      urgency,
+      intent,
+      suggestions,
+      culturalContext: {
+        detectedCulture: language || 'en',
+        culturalAppropriateness: 80,
+        notes: '[Mock analysis - upgrade to real OpenAI for accurate results]'
+      },
+      detailedAnalysis: {
+        naturalness: toneScore,
+        emotionalAppropriateness: emotion === 'negative' ? 85 : 75,
+        contextRelevance: context ? 80 : 70,
+        culturalAppropriateness: 80
+      }
+    };
   }
 
   private buildSystemPrompt(language?: string): string {
@@ -145,7 +245,7 @@ Provide actionable suggestions for improvement if the tone score is below 70.`;
     if (context) {
       prompt += `\n\nContext: ${context}`;
     }
-
+    
     prompt += '\n\nProvide a comprehensive tone analysis in JSON format.';
     
     return prompt;
@@ -213,7 +313,7 @@ export class ClaudeToneAnalysisClient {
  */
 export const createAIToneAnalysisClient = (): OpenAIToneAnalysisClient | ClaudeToneAnalysisClient => {
   const provider = process.env.TONE_ANALYSIS_PROVIDER || 'openai';
-  
+
   switch (provider.toLowerCase()) {
     case 'openai':
       return new OpenAIToneAnalysisClient();

@@ -106,10 +106,14 @@ const router: IRouter = Router();
  */
 router.post(
   '/',
+  (req, res, next) => { console.log('1. Route hit'); next(); },
   authenticate,
+  (req, res, next) => { console.log('2. Auth passed'); next(); },
   tieredRateLimiter,
+  (req, res, next) => { console.log('3. Rate limit passed'); next(); },
   validate(translateValidationSchema()),
-  translationController.translateText
+  (req, res, next) => { console.log('4. Validation passed'); next(); },
+  translationController.translateText.bind(translationController)
 );
 
 export default router;

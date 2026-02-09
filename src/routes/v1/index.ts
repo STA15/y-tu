@@ -10,6 +10,7 @@ import metricsRoutes from './metrics.routes';
 import monitoringRoutes from './monitoring.routes';
 import pricingRoutes from './pricing.routes';
 import docsRoutes from './docs.routes';
+import debugRoutes from './debug.routes';
 
 const router: IRouter = Router();
 
@@ -24,6 +25,7 @@ router.use('/languages', languagesRoutes);
 router.use('/metrics', metricsRoutes);
 router.use('/monitoring', monitoringRoutes);
 router.use('/pricing', pricingRoutes);
+router.use('/debug', debugRoutes);
 router.use('/', docsRoutes); // Documentation routes
 
 export default router;

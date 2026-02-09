@@ -88,7 +88,7 @@ router.post(
   authenticate,
   tieredRateLimiter,
   validate(detectLanguageValidation),
-  translationController.detectLanguage
+  translationController.detectLanguage.bind(translationController)
 );
 
 /**
@@ -146,7 +146,7 @@ router.get(
   '/',
   authenticate,
   tieredRateLimiter,
-  translationController.getSupportedLanguages
+  translationController.getSupportedLanguages.bind(translationController)
 );
 
 export default router;

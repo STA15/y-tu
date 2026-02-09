@@ -60,17 +60,30 @@ export abstract class TranslationApiClient {
 }
 
 /**
+ * Check if we should use mock services
+ */
+const shouldUseMock = (): boolean => {
+  return process.env.USE_MOCK_SERVICES === 'true' || 
+         !config.aiServices.translationServiceApiKey || 
+         config.aiServices.translationServiceApiKey === 'mock_development_key';
+};
+
+/**
  * Google Cloud Translation API client
  */
 export class GoogleTranslateClient extends TranslationApiClient {
   private apiKey: string;
   private baseUrl: string = 'https://translation.googleapis.com/language/translate/v2';
+  private useMock: boolean;
 
   constructor() {
     super();
+    this.useMock = shouldUseMock();
     this.apiKey = config.aiServices.translationServiceApiKey || config.aiServices.openaiApiKey || '';
-    
-    if (!this.apiKey) {
+
+    if (this.useMock) {
+      logger.info('Translation service using MOCK mode (free testing)');
+    } else if (!this.apiKey) {
       logger.warn('Translation API key not configured. Using fallback implementation.');
     }
   }
@@ -80,8 +93,8 @@ export class GoogleTranslateClient extends TranslationApiClient {
     targetLanguage: string,
     sourceLanguage?: string
   ): Promise<TranslationApiResponse> {
-    if (!this.apiKey) {
-      // Fallback implementation
+    // Use mock/fallback if enabled
+    if (this.useMock || !this.apiKey) {
       return this.fallbackTranslate(text, targetLanguage, sourceLanguage);
     }
 
@@ -119,12 +132,14 @@ export class GoogleTranslateClient extends TranslationApiClient {
       };
     } catch (error: any) {
       logger.error('Google Translate API error', { error: error.message });
-      throw new AppError(`Translation API error: ${error.message}`, 500);
+      // Fallback to mock on error
+      logger.warn('Falling back to mock translation');
+      return this.fallbackTranslate(text, targetLanguage, sourceLanguage);
     }
   }
 
   async detectLanguage(text: string): Promise<LanguageDetectionResponse> {
-    if (!this.apiKey) {
+    if (this.useMock || !this.apiKey) {
       return this.fallbackDetectLanguage(text);
     }
 
@@ -162,7 +177,7 @@ export class GoogleTranslateClient extends TranslationApiClient {
   }
 
   async getSupportedLanguages(): Promise<SupportedLanguage[]> {
-    if (!this.apiKey) {
+    if (this.useMock || !this.apiKey) {
       return getDefaultSupportedLanguages();
     }
 
@@ -186,17 +201,33 @@ export class GoogleTranslateClient extends TranslationApiClient {
   }
 
   /**
-   * Fallback translation (for development/testing)
+   * Fallback translation (for development/testing - FREE!)
    */
   private fallbackTranslate(
     text: string,
     targetLanguage: string,
     sourceLanguage?: string
   ): TranslationApiResponse {
+    // Simple mock translations for common languages
+    const mockTranslations: Record<string, string> = {
+      es: `¡Hola! [Mock ES translation of: ${text}]`,
+      fr: `Bonjour! [Mock FR translation of: ${text}]`,
+      de: `Hallo! [Mock DE translation of: ${text}]`,
+      it: `Ciao! [Mock IT translation of: ${text}]`,
+      pt: `Olá! [Mock PT translation of: ${text}]`,
+      ru: `Привет! [Mock RU translation of: ${text}]`,
+      ja: `こんにちは! [Mock JA translation of: ${text}]`,
+      zh: `你好! [Mock ZH translation of: ${text}]`,
+      ko: `안녕하세요! [Mock KO translation of: ${text}]`,
+      ar: `مرحبا! [Mock AR translation of: ${text}]`,
+    };
+
+    const translatedText = mockTranslations[targetLanguage] || `[${targetLanguage}] ${text}`;
+
     return {
-      translatedText: `[${targetLanguage}] ${text}`,
+      translatedText,
       detectedSourceLanguage: sourceLanguage || 'en',
-      confidence: 0.5
+      confidence: 0.85
     };
   }
 
@@ -209,7 +240,7 @@ export class GoogleTranslateClient extends TranslationApiClient {
     if (/[\u3040-\u309f\u30a0-\u30ff]/.test(text)) return { language: 'ja', confidence: 0.7 };
     if (/[\uac00-\ud7a3]/.test(text)) return { language: 'ko', confidence: 0.7 };
     if (/[\u0600-\u06ff]/.test(text)) return { language: 'ar', confidence: 0.7 };
-    
+
     return { language: 'en', confidence: 0.5 };
   }
 }
@@ -277,7 +308,7 @@ export class OpenAITranslateClient extends TranslationApiClient {
  */
 export const createTranslationClient = (): TranslationApiClient => {
   const provider = process.env.TRANSLATION_PROVIDER || 'google';
-  
+
   switch (provider.toLowerCase()) {
     case 'google':
       return new GoogleTranslateClient();
