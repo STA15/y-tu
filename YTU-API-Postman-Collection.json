@@ -1,0 +1,521 @@
+{
+  "info": {
+    "_postman_id": "2edba85f-f592-42b9-b82e-8914c0ff2c63",
+    "name": "Y TU API - Complete Test Suite",
+    "description": "Multi-language AI Translation, Tone Analysis & Response Generation API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "50147519",
+    "_collection_link": "https://go.postman.co/collection/50147519-2edba85f-f592-42b9-b82e-8914c0ff2c63?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "API Base Path",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/v1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Debug - Get API Keys",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/v1/debug/keys",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "debug",
+                "keys"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Translation",
+      "item": [
+        {
+          "name": "Translate - English to Spanish",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_WRKC3HvOXHpNNfdQoHD4TXh7QE-PhKqm3oNb-f39on0",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Hello, how are you today?\",\n    \"targetLanguage\": \"es\",\n    \"sourceLanguage\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/translate",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "translate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Translate - English to French",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_WRKC3HvOXHpNNfdQoHD4TXh7QE-PhKqm3oNb-f39on0",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Good morning, I need assistance with my order\",\n    \"targetLanguage\": \"fr\",\n    \"sourceLanguage\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/translate",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "translate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Translate - Auto-detect Source",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_WRKC3HvOXHpNNfdQoHD4TXh7QE-PhKqm3oNb-f39on0",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Welcome to our service!\",\n    \"targetLanguage\": \"de\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/translate",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "translate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Supported Languages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_WRKC3HvOXHpNNfdQoHD4TXh7QE-PhKqm3oNb-f39on0",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/v1/languages",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "languages"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tone Analysis",
+      "item": [
+        {
+          "name": "Analyze Tone - Negative (Complaint)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_WRKC3HvOXHpNNfdQoHD4TXh7QE-PhKqm3oNb-f39on0",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"I am extremely disappointed with your service. This is unacceptable!\",\n    \"language\": \"en\",\n    \"context\": \"Customer service\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/analyze-tone",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "analyze-tone"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Analyze Tone - Positive (Feedback)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_WRKC3HvOXHpNNfdQoHD4TXh7QE-PhKqm3oNb-f39on0",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Thank you so much! The product exceeded my expectations.\",\n    \"language\": \"en\",\n    \"context\": \"Product review\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/analyze-tone",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "analyze-tone"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Analyze Tone - Question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_WRKC3HvOXHpNNfdQoHD4TXh7QE-PhKqm3oNb-f39on0",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Could you please help me understand the return policy?\",\n    \"language\": \"en\",\n    \"context\": \"E-commerce support\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/analyze-tone",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "analyze-tone"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Response Generation",
+      "item": [
+        {
+          "name": "Generate Response - Friendly",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_WRKC3HvOXHpNNfdQoHD4TXh7QE-PhKqm3oNb-f39on0",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"originalText\": \"I need to return this damaged product\",\n    \"context\": \"Customer service\",\n    \"tone\": \"friendly\",\n    \"language\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/generate-response",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "generate-response"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Response - Professional",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_WRKC3HvOXHpNNfdQoHD4TXh7QE-PhKqm3oNb-f39on0",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"originalText\": \"When will my order be shipped?\",\n    \"context\": \"E-commerce order inquiry\",\n    \"tone\": \"professional\",\n    \"language\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/generate-response",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "generate-response"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Response - Formal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_WRKC3HvOXHpNNfdQoHD4TXh7QE-PhKqm3oNb-f39on0",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"originalText\": \"I would like to file a formal complaint\",\n    \"context\": \"Corporate communication\",\n    \"tone\": \"formal\",\n    \"language\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/generate-response",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "generate-response"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Rate Limit Testing",
+      "item": [
+        {
+          "name": "Test with STARTER Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_nhOEYHl7NKd9T6fScjKWzWqmULy4YNHPy8DUlRM7enQ",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Testing STARTER tier rate limits\",\n    \"targetLanguage\": \"es\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/translate",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "translate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test with PRO Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "ytu_tLQOQbLBTbq-3sLQXx36zY7vZCpZxI7LahTTjYrIaTs",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Testing PRO tier rate limits\",\n    \"targetLanguage\": \"fr\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/translate",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "translate"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

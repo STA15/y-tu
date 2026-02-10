@@ -1,20 +1,44 @@
+# Dependencies
 node_modules
-dist
+npm-debug.log
+
+# TypeScript
+src
+*.ts
+tsconfig.json
+
+# Development
 .env
 .env.local
-.env.*.local
-*.log
-.DS_Store
+.env.development
+.env.test
+nodemon.json
+
+# Testing
+*.test.js
+*.spec.js
+__tests__
 coverage
-.nyc_output
+
+# Documentation
+README.md
+docs
+*.md
+
+# IDE
 .vscode
 .idea
 *.swp
 *.swo
-*~
-tests
-postman
-*.test.ts
-*.spec.ts
-jest.config.js
-tsconfig.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Debug
+.git
+.gitignore
