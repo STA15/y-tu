@@ -5,7 +5,6 @@ npm-debug.log
 # TypeScript
 src
 *.ts
-tsconfig.json
 
 # Development
 .env
