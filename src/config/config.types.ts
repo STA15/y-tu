@@ -27,10 +27,11 @@ export interface CorsConfig {
 }
 
 export interface DatabaseConfig {
+  mongoUri?: string;
   connectionString?: string;
   host?: string;
   port?: number;
-  database?: string;
+  name?: string;
   username?: string;
   password?: string;
   ssl?: boolean;

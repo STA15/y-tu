@@ -63,21 +63,16 @@ export const config: AppConfig = {
     )
   },
 
-  database: process.env.DATABASE_URL || process.env.DATABASE_CONNECTION_STRING
-    ? {
-        connectionString: process.env.DATABASE_URL || process.env.DATABASE_CONNECTION_STRING,
-        ssl: parseBoolean(process.env.DATABASE_SSL, process.env.NODE_ENV === 'production')
-      }
-    : process.env.DATABASE_HOST
-    ? {
-        host: process.env.DATABASE_HOST,
-        port: parseIntSafe(process.env.DATABASE_PORT, 5432),
-        database: process.env.DATABASE_NAME,
-        username: process.env.DATABASE_USERNAME,
-        password: process.env.DATABASE_PASSWORD,
-        ssl: parseBoolean(process.env.DATABASE_SSL, process.env.NODE_ENV === 'production')
-      }
-    : undefined,
+  database: {
+    mongoUri: process.env.MONGODB_URI,
+    connectionString: process.env.DATABASE_URL || process.env.DATABASE_CONNECTION_STRING,
+    host: process.env.DATABASE_HOST,
+    port: parseIntSafe(process.env.DATABASE_PORT, 5432),
+    name: process.env.DATABASE_NAME,
+    username: process.env.DATABASE_USERNAME,
+    password: process.env.DATABASE_PASSWORD,
+    ssl: parseBoolean(process.env.DATABASE_SSL, process.env.NODE_ENV === 'production')
+  },
 
   aiServices: {
     openaiApiKey: process.env.OPENAI_API_KEY || '',
