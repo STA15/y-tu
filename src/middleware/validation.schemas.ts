@@ -108,11 +108,10 @@ export const validateTone = (): ValidationChain => {
     .withMessage('Tone must be a string')
     .trim()
     .toLowerCase()
-    .isIn(['professional', 'casual', 'friendly', 'formal', 'creative'])
-    .withMessage('Tone must be one of: professional, casual, friendly, formal, creative')
+    .isIn(['professional', 'casual', 'friendly', 'formal', 'empathetic', 'concise', 'creative'])
+    .withMessage('Tone must be one of: professional, casual, friendly, formal, empathetic, concise, creative')
     .customSanitizer(sanitize);
 };
-
 /**
  * Validates context field (optional, max 10000 chars)
  */
