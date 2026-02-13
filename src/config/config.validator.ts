@@ -116,10 +116,15 @@ export class ConfigValidator {
     if (!database) {
       return; // Database is optional
     }
-
+  
+    // If MongoDB URI is provided, that's all we need
+    if (database.mongoUri) {
+      return; // Valid - using MongoDB
+    }
+  
     // If connection string is provided, it takes precedence
     if (database.connectionString) {
-      if (!database.connectionString.startsWith('mongodb://') && 
+      if (!database.connectionString.startsWith('mongodb://') &&
           !database.connectionString.startsWith('mongodb+srv://') &&
           !database.connectionString.startsWith('postgresql://') &&
           !database.connectionString.startsWith('mysql://')) {
@@ -134,5 +139,4 @@ export class ConfigValidator {
         this.warnings.push('Database name not specified');
       }
     }
-  }
-}
+  }}
