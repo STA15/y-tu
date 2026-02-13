@@ -6,12 +6,19 @@ const router = Router();
 // Temporary debug endpoint - REMOVE BEFORE PRODUCTION
 router.get('/keys', async (req: Request, res: Response) => {
   try {
+    const mongoose = require('mongoose');
+    
+    // Log connection state
+    const connectionState = mongoose.connection.readyState;
+    const stateNames = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+    
     // Get ALL keys from MongoDB (not just active ones)
     const allKeys = await ApiKeyModel.find({}).select('key name tier isActive').lean();
     
     res.json({
       success: true,
       data: { 
+        connectionState: stateNames[connectionState],
         keys: allKeys.map(k => ({
           key: k.key,
           name: k.name,
@@ -21,10 +28,15 @@ router.get('/keys', async (req: Request, res: Response) => {
         }))
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch keys from database'
+      error: 'Failed to fetch keys from database',
+      details: {
+        message: error.message,
+        name: error.name,
+        code: error.code
+      }
     });
   }
 });
