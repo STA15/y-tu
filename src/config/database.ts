@@ -4,7 +4,6 @@ import { config } from './config';
 
 class Database {
   private static instance: Database;
-  private isConnected: boolean = false;
 
   private constructor() {}
 
@@ -16,8 +15,18 @@ class Database {
   }
 
   async connect(): Promise<void> {
-    if (this.isConnected) {
+    // Check Mongoose's actual connection state (0=disconnected, 1=connected, 2=connecting, 3=disconnecting)
+    if (mongoose.connection.readyState === 1) {
       logger.info('Using existing database connection');
+      return;
+    }
+
+    if (mongoose.connection.readyState === 2) {
+      logger.info('Database connection in progress, waiting...');
+      // Wait for the existing connection attempt to complete
+      await new Promise((resolve) => {
+        mongoose.connection.once('connected', resolve);
+      });
       return;
     }
 
@@ -28,9 +37,13 @@ class Database {
         throw new Error('MONGODB_URI is not defined');
       }
 
-      await mongoose.connect(mongoUri);
+      logger.info('Connecting to MongoDB...');
+
+      await mongoose.connect(mongoUri, {
+        serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+        socketTimeoutMS: 45000,
+      });
       
-      this.isConnected = true;
       logger.info('MongoDB connected successfully', {
         host: mongoose.connection.host,
         database: mongoose.connection.name
@@ -42,7 +55,6 @@ class Database {
 
       mongoose.connection.on('disconnected', () => {
         logger.warn('MongoDB disconnected');
-        this.isConnected = false;
       });
 
     } catch (error) {
@@ -52,13 +64,12 @@ class Database {
   }
 
   async disconnect(): Promise<void> {
-    if (!this.isConnected) {
+    if (mongoose.connection.readyState === 0) {
       return;
     }
 
     try {
       await mongoose.disconnect();
-      this.isConnected = false;
       logger.info('MongoDB disconnected');
     } catch (error) {
       logger.error('MongoDB disconnection failed', { error });
