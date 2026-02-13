@@ -1,28 +1,32 @@
 import { Router, Request, Response } from 'express';
-import { apiKeyStore } from '../../services/apiKeyStore.service';
+import { ApiKeyModel } from '../../models/apiKey.model.mongoose';
 
 const router = Router();
 
 // Temporary debug endpoint - REMOVE BEFORE PRODUCTION
-router.get('/keys', (req: Request, res: Response) => {
-  const keys: any[] = [];
-  
-  // Access the private keys using type assertion
-  const store = apiKeyStore as any;
-  if (store.keys && store.keys instanceof Map) {
-    for (const [key, apiKey] of store.keys.entries()) {
-      keys.push({
-        key: key,
-        tier: apiKey.tier,
-        name: apiKey.name
-      });
-    }
+router.get('/keys', async (req: Request, res: Response) => {
+  try {
+    // Get ALL keys from MongoDB (not just active ones)
+    const allKeys = await ApiKeyModel.find({}).select('key name tier isActive').lean();
+    
+    res.json({
+      success: true,
+      data: { 
+        keys: allKeys.map(k => ({
+          key: k.key,
+          name: k.name,
+          tier: k.tier,
+          isActive: k.isActive,
+          keyLength: k.key?.length || 0
+        }))
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch keys from database'
+    });
   }
-  
-  res.json({
-    success: true,
-    data: { keys }
-  });
 });
 
 export default router;

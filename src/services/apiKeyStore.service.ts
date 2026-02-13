@@ -1,20 +1,30 @@
 import { ApiKey, ApiKeyTier, CreateApiKeyRequest, ApiKeyUsage, TIER_RATE_LIMITS } from '../models/apiKey.model';
+import { ApiKeyModel } from '../models/apiKey.model.mongoose';
+import { UsageModel } from '../models/usage.model.mongoose';
 import { logger } from '../utils/logger';
 import crypto from 'crypto';
+import { database } from '../config/database';
 
 /**
- * In-memory API key store
- * TODO: Migrate to database (PostgreSQL, MongoDB, etc.)
+ * MongoDB-based API key store
  */
 class ApiKeyStore {
-  private keys: Map<string, ApiKey> = new Map();
-  private usage: Map<string, Map<string, ApiKeyUsage>> = new Map(); // apiKeyId -> date -> usage
+  private initializationPromise: Promise<void> | null = null;
+
+  /**
+   * Ensure database connection before operations
+   */
+  private async ensureConnection(): Promise<void> {
+    if (!this.initializationPromise) {
+      this.initializationPromise = database.connect();
+    }
+    await this.initializationPromise;
+  }
 
   /**
    * Generate a secure API key
    */
   private generateApiKey(): string {
-    // Generate a 32-byte random key and encode as base64url
     const buffer = crypto.randomBytes(32);
     return buffer.toString('base64url');
   }
@@ -22,219 +32,309 @@ class ApiKeyStore {
   /**
    * Create a new API key
    */
-  create(request: CreateApiKeyRequest): ApiKey {
-    const id = `key_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+  async create(request: CreateApiKeyRequest): Promise<ApiKey> {
+    await this.ensureConnection();
+
     const key = `ytu_${this.generateApiKey()}`;
-    
-    const apiKey: ApiKey = {
-      id,
+
+    const apiKeyDoc = new ApiKeyModel({
       key,
       name: request.name,
       tier: request.tier,
       userId: request.userId,
-      createdAt: new Date(),
       isActive: true,
       metadata: request.metadata || {}
-    };
+    });
 
-    this.keys.set(key, apiKey);
-    logger.info(`Created API key: ${id} (${request.tier})`);
-    
-    return apiKey;
+    await apiKeyDoc.save();
+
+    logger.info(`Created API key: ${apiKeyDoc._id.toString()} (${request.tier})`);
+
+    return {
+      id: apiKeyDoc._id.toString(),
+      key: apiKeyDoc.key,
+      name: apiKeyDoc.name,
+      tier: apiKeyDoc.tier,
+      userId: apiKeyDoc.userId,
+      createdAt: apiKeyDoc.createdAt,
+      isActive: apiKeyDoc.isActive,
+      lastUsedAt: apiKeyDoc.lastUsedAt,
+      metadata: apiKeyDoc.metadata
+    };
   }
 
   /**
    * Find API key by key string
    */
-  findByKey(key: string): ApiKey | null {
-    const apiKey = this.keys.get(key);
-    if (!apiKey || !apiKey.isActive) {
+  async findByKey(key: string): Promise<ApiKey | null> {
+    await this.ensureConnection();
+
+    // TEMPORARY DEBUG
+    logger.info('Finding API key', { 
+      searchKey: key, 
+      keyLength: key.length 
+    });
+
+    const apiKeyDoc = await ApiKeyModel.findOne({ key, isActive: true });
+    
+    // TEMPORARY DEBUG
+    logger.info('Query result', { 
+      found: !!apiKeyDoc,
+      docKey: apiKeyDoc?.key,
+      docId: apiKeyDoc?._id?.toString()
+    });
+
+    if (!apiKeyDoc) {
       return null;
     }
-    return apiKey;
+
+    return {
+      id: apiKeyDoc._id.toString(),
+      key: apiKeyDoc.key,
+      name: apiKeyDoc.name,
+      tier: apiKeyDoc.tier,
+      userId: apiKeyDoc.userId,
+      createdAt: apiKeyDoc.createdAt,
+      isActive: apiKeyDoc.isActive,
+      lastUsedAt: apiKeyDoc.lastUsedAt,
+      metadata: apiKeyDoc.metadata
+    };
   }
 
   /**
    * Find API key by ID
    */
-  findById(id: string): ApiKey | null {
-    for (const apiKey of this.keys.values()) {
-      if (apiKey.id === id && apiKey.isActive) {
-        return apiKey;
-      }
+  async findById(id: string): Promise<ApiKey | null> {
+    await this.ensureConnection();
+
+    const apiKeyDoc = await ApiKeyModel.findOne({ _id: id, isActive: true });
+    if (!apiKeyDoc) {
+      return null;
     }
-    return null;
+
+    return {
+      id: apiKeyDoc._id.toString(),
+      key: apiKeyDoc.key,
+      name: apiKeyDoc.name,
+      tier: apiKeyDoc.tier,
+      userId: apiKeyDoc.userId,
+      createdAt: apiKeyDoc.createdAt,
+      isActive: apiKeyDoc.isActive,
+      lastUsedAt: apiKeyDoc.lastUsedAt,
+      metadata: apiKeyDoc.metadata
+    };
   }
 
   /**
    * Get all API keys for a user
    */
-  findByUserId(userId: string): ApiKey[] {
-    return Array.from(this.keys.values()).filter(
-      key => key.userId === userId && key.isActive
-    );
+  async findByUserId(userId: string): Promise<ApiKey[]> {
+    await this.ensureConnection();
+
+    const apiKeyDocs = await ApiKeyModel.find({ userId, isActive: true });
+    
+    return apiKeyDocs.map(doc => ({
+      id: doc._id.toString(),
+      key: doc.key,
+      name: doc.name,
+      tier: doc.tier,
+      userId: doc.userId,
+      createdAt: doc.createdAt,
+      isActive: doc.isActive,
+      lastUsedAt: doc.lastUsedAt,
+      metadata: doc.metadata
+    }));
   }
 
   /**
    * Update API key
    */
-  update(key: string, updates: Partial<ApiKey>): ApiKey | null {
-    const apiKey = this.keys.get(key);
-    if (!apiKey) {
+  async update(key: string, updates: Partial<ApiKey>): Promise<ApiKey | null> {
+    await this.ensureConnection();
+
+    const apiKeyDoc = await ApiKeyModel.findOneAndUpdate(
+      { key },
+      { $set: updates },
+      { new: true }
+    );
+
+    if (!apiKeyDoc) {
       return null;
     }
 
-    const updated = { ...apiKey, ...updates };
-    this.keys.set(key, updated);
-    return updated;
+    return {
+      id: apiKeyDoc._id.toString(),
+      key: apiKeyDoc.key,
+      name: apiKeyDoc.name,
+      tier: apiKeyDoc.tier,
+      userId: apiKeyDoc.userId,
+      createdAt: apiKeyDoc.createdAt,
+      isActive: apiKeyDoc.isActive,
+      lastUsedAt: apiKeyDoc.lastUsedAt,
+      metadata: apiKeyDoc.metadata
+    };
   }
 
   /**
    * Deactivate API key
    */
-  deactivate(key: string): boolean {
-    const apiKey = this.keys.get(key);
-    if (!apiKey) {
-      return false;
-    }
+  async deactivate(key: string): Promise<boolean> {
+    await this.ensureConnection();
 
-    apiKey.isActive = false;
-    this.keys.set(key, apiKey);
-    logger.info(`Deactivated API key: ${apiKey.id}`);
-    return true;
+    const result = await ApiKeyModel.updateOne(
+      { key },
+      { $set: { isActive: false } }
+    );
+
+    if (result.modifiedCount > 0) {
+      logger.info(`Deactivated API key: ${key}`);
+      return true;
+    }
+    return false;
   }
 
   /**
    * Delete API key
    */
-  delete(key: string): boolean {
-    const deleted = this.keys.delete(key);
-    if (deleted) {
-      // Also remove usage data
-      const apiKey = Array.from(this.keys.values()).find(k => k.key === key);
-      if (apiKey) {
-        this.usage.delete(apiKey.id);
-      }
-      logger.info(`Deleted API key: ${key}`);
+  async delete(key: string): Promise<boolean> {
+    await this.ensureConnection();
+
+    const apiKeyDoc = await ApiKeyModel.findOne({ key });
+    if (!apiKeyDoc) {
+      return false;
     }
-    return deleted;
+
+    await ApiKeyModel.deleteOne({ key });
+    await UsageModel.deleteMany({ apiKeyId: apiKeyDoc._id.toString() });
+
+    logger.info(`Deleted API key: ${key}`);
+    return true;
   }
 
   /**
    * Record API key usage
    */
-  recordUsage(apiKeyId: string): void {
+  async recordUsage(apiKeyId: string): Promise<void> {
+    await this.ensureConnection();
+
     const today = new Date().toISOString().split('T')[0];
-    
-    if (!this.usage.has(apiKeyId)) {
-      this.usage.set(apiKeyId, new Map());
-    }
 
-    const dailyUsage = this.usage.get(apiKeyId)!;
-    
-    if (!dailyUsage.has(today)) {
-      dailyUsage.set(today, {
-        apiKeyId,
-        date: today,
-        requestCount: 0,
-        lastRequestAt: new Date()
-      });
-    }
-
-    const usage = dailyUsage.get(today)!;
-    usage.requestCount++;
-    usage.lastRequestAt = new Date();
+    await UsageModel.findOneAndUpdate(
+      { apiKeyId, date: today },
+      {
+        $inc: { requestCount: 1 },
+        $set: { lastRequestAt: new Date() }
+      },
+      { upsert: true }
+    );
 
     // Update lastUsedAt on the API key
-    const apiKey = Array.from(this.keys.values()).find(k => k.id === apiKeyId);
-    if (apiKey) {
-      apiKey.lastUsedAt = new Date();
-    }
+    await ApiKeyModel.updateOne(
+      { _id: apiKeyId },
+      { $set: { lastUsedAt: new Date() } }
+    );
   }
 
   /**
    * Get usage statistics for an API key
    */
-  getUsage(apiKeyId: string, date?: string): ApiKeyUsage | null {
+  async getUsage(apiKeyId: string, date?: string): Promise<ApiKeyUsage | null> {
+    await this.ensureConnection();
+
     const targetDate = date || new Date().toISOString().split('T')[0];
-    const dailyUsage = this.usage.get(apiKeyId);
     
-    if (!dailyUsage) {
+    const usage = await UsageModel.findOne({ apiKeyId, date: targetDate });
+    
+    if (!usage) {
       return null;
     }
 
-    return dailyUsage.get(targetDate) || null;
+    return {
+      apiKeyId: usage.apiKeyId,
+      date: usage.date,
+      requestCount: usage.requestCount,
+      lastRequestAt: usage.lastRequestAt
+    };
   }
 
   /**
    * Get daily request count for an API key
    */
-  getDailyRequestCount(apiKeyId: string): number {
-    const usage = this.getUsage(apiKeyId);
+  async getDailyRequestCount(apiKeyId: string): Promise<number> {
+    const usage = await this.getUsage(apiKeyId);
     return usage ? usage.requestCount : 0;
   }
 
   /**
    * Check if API key has exceeded daily limit
    */
-  hasExceededDailyLimit(apiKey: ApiKey): boolean {
+  async hasExceededDailyLimit(apiKey: ApiKey): Promise<boolean> {
     if (apiKey.tier === ApiKeyTier.ENTERPRISE) {
       return false; // Unlimited
     }
 
-    const dailyCount = this.getDailyRequestCount(apiKey.id);
+    const dailyCount = await this.getDailyRequestCount(apiKey.id);
     const limit = TIER_RATE_LIMITS[apiKey.tier].requestsPerDay;
-    
+
     return dailyCount >= limit;
   }
 
   /**
-   * Clean up old usage data (older than 30 days)
+   * Clean up old usage data (older than 90 days)
    */
-  cleanupOldUsage(): void {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  async cleanupOldUsage(): Promise<void> {
+    await this.ensureConnection();
 
-    for (const [apiKeyId, dailyUsage] of this.usage.entries()) {
-      for (const [date, usage] of dailyUsage.entries()) {
-        const usageDate = new Date(date);
-        if (usageDate < thirtyDaysAgo) {
-          dailyUsage.delete(date);
-        }
-      }
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const cutoffDate = ninetyDaysAgo.toISOString().split('T')[0];
 
-      // Remove empty usage maps
-      if (dailyUsage.size === 0) {
-        this.usage.delete(apiKeyId);
-      }
+    const result = await UsageModel.deleteMany({
+      date: { $lt: cutoffDate }
+    });
+
+    if (result.deletedCount > 0) {
+      logger.info(`Cleaned up ${result.deletedCount} old usage records`);
     }
   }
 
   /**
    * Initialize with sample API keys for development
    */
-  initializeSampleKeys(): void {
-    if (process.env.NODE_ENV === 'development') {
-      // Sample FREE tier key
-      this.create({
-        name: 'Development FREE Key',
-        tier: ApiKeyTier.FREE
-      });
-
-      // Sample STARTER tier key
-      this.create({
-        name: 'Development STARTER Key',
-        tier: ApiKeyTier.STARTER
-      });
-
-      // Sample PRO tier key
-      this.create({
-        name: 'Development PRO Key',
-        tier: ApiKeyTier.PRO
-      });
-
-      logger.info('Initialized sample API keys for development');
+  async initializeSampleKeys(): Promise<void> {
+    if (process.env.NODE_ENV !== 'development') {
+      return;
     }
+
+    await this.ensureConnection();
+
+    // Check if sample keys already exist
+    const existingKeys = await ApiKeyModel.countDocuments({
+      name: { $regex: /^Development.*Key$/ }
+    });
+
+    if (existingKeys > 0) {
+      logger.info('Sample API keys already exist');
+      return;
+    }
+
+    // Create sample keys for each tier
+    await this.create({
+      name: 'Development FREE Key',
+      tier: ApiKeyTier.FREE
+    });
+
+    await this.create({
+      name: 'Development STARTER Key',
+      tier: ApiKeyTier.STARTER
+    });
+
+    await this.create({
+      name: 'Development PRO Key',
+      tier: ApiKeyTier.PRO
+    });
+
+    logger.info('Initialized sample API keys for development');
   }
 }
 
@@ -243,10 +343,14 @@ export const apiKeyStore = new ApiKeyStore();
 
 // Initialize sample keys in development
 if (process.env.NODE_ENV === 'development') {
-  apiKeyStore.initializeSampleKeys();
+  apiKeyStore.initializeSampleKeys().catch(err => {
+    logger.error('Failed to initialize sample keys', { error: err });
+  });
 }
 
 // Cleanup old usage data daily
 setInterval(() => {
-  apiKeyStore.cleanupOldUsage();
+  apiKeyStore.cleanupOldUsage().catch(err => {
+    logger.error('Failed to cleanup old usage data', { error: err });
+  });
 }, 24 * 60 * 60 * 1000); // Every 24 hours

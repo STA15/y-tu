@@ -130,7 +130,7 @@ export class ConfigValidator {
       if (!database.host) {
         this.warnings.push('Database host not specified');
       }
-      if (!database.database) {
+      if (!database.name) {
         this.warnings.push('Database name not specified');
       }
     }

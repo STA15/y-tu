@@ -23,62 +23,66 @@ export interface AuthRequest extends Request {
  * 1. RapidAPI proxy authentication (if enabled)
  * 2. Direct API Key (X-API-Key header)
  * 3. Bearer token (JWT or API key)
- * 
+ *
  * Priority: RapidAPI > API Key > JWT
  */
-export const authenticate = (
+export const authenticate = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): void => {
-  // First, try RapidAPI authentication (if enabled)
-  if (isRapidAPIEnabled()) {
-    const rapidapiInfo = {
-      user: req.headers['x-rapidapi-user'] as string,
-      subscription: req.headers['x-rapidapi-subscription'] as string,
-      proxySecret: req.headers['x-rapidapi-proxy-secret'] as string,
-    };
+): Promise<void> => {
+  try {
+    // First, try RapidAPI authentication (if enabled)
+    if (isRapidAPIEnabled()) {
+      const rapidapiInfo = {
+        user: req.headers['x-rapidapi-user'] as string,
+        subscription: req.headers['x-rapidapi-subscription'] as string,
+        proxySecret: req.headers['x-rapidapi-proxy-secret'] as string,
+      };
 
-    // If RapidAPI headers are present, use RapidAPI auth
-    if (rapidapiInfo.proxySecret || rapidapiInfo.user) {
-      return rapidapiAuth(req as RapidAPIRequest, res, (err) => {
-        if (err) {
-          // RapidAPI auth failed, try fallback
-          return tryFallbackAuth(req, res, next);
-        }
-        next();
-      });
+      // If RapidAPI headers are present, use RapidAPI auth
+      if (rapidapiInfo.proxySecret || rapidapiInfo.user) {
+        return rapidapiAuth(req as RapidAPIRequest, res, (err) => {
+          if (err) {
+            // RapidAPI auth failed, try fallback
+            return tryFallbackAuth(req, res, next);
+          }
+          next();
+        });
+      }
     }
-  }
 
-  // Fallback to regular authentication
-  return tryFallbackAuth(req, res, next);
+    // Fallback to regular authentication
+    await tryFallbackAuth(req, res, next);
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**
  * Try fallback authentication methods (API Key or JWT)
  */
-const tryFallbackAuth = (
+const tryFallbackAuth = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   // Check for API key
   const apiKeyHeader = req.headers['x-api-key'] as string;
   const authHeader = req.headers.authorization;
-  
+
   // If X-API-Key header is present, use API key authentication
   if (apiKeyHeader) {
-    return authenticateApiKey(req as ApiKeyRequest, res, next);
+    return await authenticateApiKey(req as ApiKeyRequest, res, next);
   }
 
   // If Bearer token is present and doesn't look like an API key, use JWT authentication
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim();
-    
+
     // If it's an API key (starts with ytu_), use API key auth
     if (token.startsWith('ytu_')) {
-      return authenticateApiKey(req as ApiKeyRequest, res, next);
+      return await authenticateApiKey(req as ApiKeyRequest, res, next);
     }
 
     // Otherwise, it's a JWT token
@@ -103,7 +107,7 @@ const authenticateJWT = (
 ): void => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new AppError('Bearer token is required', 401);
     }

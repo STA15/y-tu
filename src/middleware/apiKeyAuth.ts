@@ -51,11 +51,11 @@ const extractApiKey = (req: Request): string | null => {
  * API Key authentication middleware
  * Supports both X-API-Key header and Bearer token format
  */
-export const authenticateApiKey = (
+export const authenticateApiKey = async (
   req: ApiKeyRequest,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     const apiKeyString = extractApiKey(req);
 
@@ -64,7 +64,7 @@ export const authenticateApiKey = (
     }
 
     // Find API key in store
-    const apiKey = apiKeyStore.findByKey(apiKeyString);
+    const apiKey = await apiKeyStore.findByKey(apiKeyString);
 
     if (!apiKey) {
       throw new AppError('Invalid API key', 401);
@@ -83,8 +83,10 @@ export const authenticateApiKey = (
       apiKeyName: apiKey.name
     };
 
-    // Record usage
-    apiKeyStore.recordUsage(apiKey.id);
+    // Record usage (async but don't await - fire and forget)
+    apiKeyStore.recordUsage(apiKey.id).catch(err => {
+      logger.error('Failed to record API key usage', { error: err });
+    });
 
     next();
   } catch (error) {
@@ -100,17 +102,17 @@ export const authenticateApiKey = (
  * Optional API key authentication (doesn't fail if no key provided)
  * Useful for endpoints that support both authenticated and anonymous access
  */
-export const optionalApiKeyAuth = (
+export const optionalApiKeyAuth = async (
   req: ApiKeyRequest,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     const apiKeyString = extractApiKey(req);
 
     if (apiKeyString) {
-      const apiKey = apiKeyStore.findByKey(apiKeyString);
-      
+      const apiKey = await apiKeyStore.findByKey(apiKeyString);
+
       if (apiKey && apiKey.isActive) {
         req.apiKey = apiKey;
         req.user = {
@@ -119,7 +121,11 @@ export const optionalApiKeyAuth = (
           apiKeyId: apiKey.id,
           apiKeyName: apiKey.name
         };
-        apiKeyStore.recordUsage(apiKey.id);
+
+        // Record usage (async but don't await - fire and forget)
+        apiKeyStore.recordUsage(apiKey.id).catch(err => {
+          logger.error('Failed to record API key usage', { error: err });
+        });
       }
     }
 

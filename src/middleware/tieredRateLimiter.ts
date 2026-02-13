@@ -66,7 +66,7 @@ const resetCountersIfNeeded = (state: RateLimitState): void => {
 /**
  * Check if request exceeds rate limits
  */
-const checkRateLimit = (apiKeyId: string, tier: ApiKeyTier): { allowed: boolean; reason?: string } => {
+const checkRateLimit = async (apiKeyId: string, tier: ApiKeyTier): Promise<{ allowed: boolean; reason?: string }> => {
   const limits = TIER_RATE_LIMITS[tier];
   const state = getRateLimitState(apiKeyId);
   
@@ -74,7 +74,7 @@ const checkRateLimit = (apiKeyId: string, tier: ApiKeyTier): { allowed: boolean;
 
   // Check daily limit
   if (limits.requestsPerDay !== Infinity) {
-    const dailyUsage = apiKeyStore.getDailyRequestCount(apiKeyId);
+    const dailyUsage = await apiKeyStore.getDailyRequestCount(apiKeyId);
     if (dailyUsage >= limits.requestsPerDay) {
       return {
         allowed: false,
@@ -122,18 +122,18 @@ const incrementCounters = (apiKeyId: string): void => {
  * Tiered rate limiting middleware
  * Must be used after authenticateApiKey middleware
  */
-export const tieredRateLimiter = (
+export const tieredRateLimiter = async (
   req: ApiKeyRequest,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     // Check for RapidAPI user first (if enabled)
     const rapidapi = (req as any).rapidapi;
     if (rapidapi && rapidapi.tier) {
       const tier = rapidapi.tier as ApiKeyTier;
       // Use RapidAPI tier for rate limiting
-      const check = checkRateLimit(
+      const check = await checkRateLimit(
         `rapidapi_${rapidapi.user}`,
         tier
       );
@@ -168,18 +168,20 @@ export const tieredRateLimiter = (
     }
 
     const { apiKey } = req;
-    const check = checkRateLimit(apiKey.id, apiKey.tier);
+    const check = await checkRateLimit(apiKey.id, apiKey.tier);
 
     if (!check.allowed) {
       const requestId = getRequestId(req, res);
       
       // Log rate limit hit
+      const dailyUsage = await apiKeyStore.getDailyRequestCount(apiKey.id);
+      
       logger.security('Rate limit exceeded', {
         requestId,
         apiKeyId: apiKey.id,
         tier: apiKey.tier,
         reason: check.reason,
-        dailyUsage: apiKeyStore.getDailyRequestCount(apiKey.id),
+        dailyUsage,
         limit: TIER_RATE_LIMITS[apiKey.tier].requestsPerDay,
         endpoint: req.path,
         method: req.method,
@@ -204,7 +206,7 @@ export const tieredRateLimiter = (
 
     // Add rate limit headers
     const limits = TIER_RATE_LIMITS[apiKey.tier];
-    const dailyUsage = apiKeyStore.getDailyRequestCount(apiKey.id);
+    const dailyUsage = await apiKeyStore.getDailyRequestCount(apiKey.id);
     const remaining = limits.requestsPerDay === Infinity 
       ? 'unlimited' 
       : Math.max(0, limits.requestsPerDay - dailyUsage).toString();

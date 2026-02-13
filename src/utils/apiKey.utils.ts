@@ -9,8 +9,8 @@ import { logger } from './logger';
 /**
  * Create a new API key
  */
-export const createApiKey = (request: CreateApiKeyRequest): ApiKey => {
-  return apiKeyStore.create(request);
+export const createApiKey = async (request: CreateApiKeyRequest): Promise<ApiKey> => {
+  return await apiKeyStore.create(request);
 };
 
 /**
@@ -39,42 +39,41 @@ export const getApiKeyInfo = (apiKey: ApiKey) => {
 /**
  * Get usage statistics for an API key
  */
-export const getApiKeyUsage = (apiKeyId: string, date?: string) => {
-  return apiKeyStore.getUsage(apiKeyId, date);
+export const getApiKeyUsage = async (apiKeyId: string, date?: string) => {
+  return await apiKeyStore.getUsage(apiKeyId, date);
 };
 
 /**
  * Get all API keys for a user
  */
-export const getUserApiKeys = (userId: string): ApiKey[] => {
-  return apiKeyStore.findByUserId(userId);
+export const getUserApiKeys = async (userId: string): Promise<ApiKey[]> => {
+  return await apiKeyStore.findByUserId(userId);
 };
 
 /**
  * Deactivate an API key
  */
-export const deactivateApiKey = (key: string): boolean => {
-  return apiKeyStore.deactivate(key);
+export const deactivateApiKey = async (key: string): Promise<boolean> => {
+  return await apiKeyStore.deactivate(key);
 };
 
 /**
  * Reactivate an API key
  */
-export const reactivateApiKey = (key: string): boolean => {
-  const apiKey = apiKeyStore.findByKey(key);
+export const reactivateApiKey = async (key: string): Promise<boolean> => {
+  const apiKey = await apiKeyStore.findByKey(key);
   if (!apiKey) {
     return false;
   }
-  
-  apiKeyStore.update(key, { isActive: true });
+  await apiKeyStore.update(key, { isActive: true });
   return true;
 };
 
 /**
  * Delete an API key
  */
-export const deleteApiKey = (key: string): boolean => {
-  return apiKeyStore.delete(key);
+export const deleteApiKey = async (key: string): Promise<boolean> => {
+  return await apiKeyStore.delete(key);
 };
 
 import { TIER_RATE_LIMITS } from '../models/apiKey.model';
@@ -84,7 +83,6 @@ import { TIER_RATE_LIMITS } from '../models/apiKey.model';
  */
 export const getTierInfo = (tier: ApiKeyTier) => {
   const limits = TIER_RATE_LIMITS[tier];
-  
   return {
     tier,
     limits: {

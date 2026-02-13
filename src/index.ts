@@ -12,6 +12,7 @@ import { requestStartTimeMiddleware, sendSuccess } from './utils/response';
 import v1Routes from './routes/v1';
 import authRoutes from './routes/auth.routes';
 import { logger } from './utils/logger';
+import { database } from './config/database';
 
 console.log('✅ 1. All imports loaded successfully');
 
@@ -101,8 +102,8 @@ console.log('🔧 11. Preparing to start server...');
 
 if (isDevelopment() || require.main === module) {
   console.log('✅ 12. Starting server on port', config.server.port);
-  
-  const server = app.listen(config.server.port, () => {
+
+  const server = app.listen(config.server.port, async () => {
     console.log('\n' + '='.repeat(50));
     console.log('🎉 Y TU API SERVER STARTED SUCCESSFULLY!');
     console.log('='.repeat(50));
@@ -110,7 +111,17 @@ if (isDevelopment() || require.main === module) {
     logger.info(`📍 Environment: ${config.server.nodeEnv}`);
     logger.info(`🔖 API Version: ${config.server.apiVersion}`);
     logger.info(`🌐 API Base Path: ${apiBasePath}`);
-    
+
+    // Connect to MongoDB
+    try {
+      await database.connect();
+      logger.info('✅ Database connected successfully');
+      console.log('✅ MongoDB connected');
+    } catch (error) {
+      logger.error('❌ Database connection failed', { error });
+      console.error('\n⚠️  Warning: Database connection failed. API will work but data won\'t persist.\n');
+    }
+
     if (isDevelopment()) {
       console.log(`\n📍 Available Endpoints:`);
       console.log(`   Health: http://localhost:${config.server.port}/health`);
@@ -130,13 +141,15 @@ if (isDevelopment() || require.main === module) {
   });
 
   // Graceful shutdown handlers
-  process.on('SIGTERM', () => {
+  process.on('SIGTERM', async () => {
     logger.info('SIGTERM received: closing server gracefully');
+    await database.disconnect();
     server.close(() => logger.info('Server closed'));
   });
 
-  process.on('SIGINT', () => {
+  process.on('SIGINT', async () => {
     logger.info('SIGINT received: closing server gracefully');
+    await database.disconnect();
     server.close(() => {
       logger.info('Server closed');
       process.exit(0);

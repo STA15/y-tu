@@ -52,14 +52,14 @@ const router: IRouter = Router();
 router.get(
   '/',
   authenticate,
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) {
         throw new AppError('User ID not found', 401);
       }
 
-      const apiKeys = getUserApiKeys(userId);
+      const apiKeys = await getUserApiKeys(userId);
       const apiKeysInfo = apiKeys.map(getApiKeyInfo);
 
       sendSuccess(req, res, apiKeysInfo);
@@ -153,12 +153,12 @@ router.post(
   '/',
   authenticate,
   validate(createApiKeyValidation),
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name, tier } = req.body;
       const userId = (req as any).user?.id;
 
-      const apiKey = createApiKey({
+      const apiKey = await createApiKey({
         name,
         tier: tier as ApiKeyTier,
         userId
@@ -235,13 +235,13 @@ router.get(
 router.get(
   '/:id/usage',
   authenticate,
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
       const date = req.query.date as string | undefined;
       const userId = (req as any).user?.id;
 
-      const apiKey = apiKeyStore.findById(id);
+      const apiKey = await apiKeyStore.findById(id);
       if (!apiKey) {
         throw new AppError('API key not found', 404);
       }
@@ -251,7 +251,7 @@ router.get(
         throw new AppError('Unauthorized', 403);
       }
 
-      const usage = getApiKeyUsage(id, date);
+      const usage = await getApiKeyUsage(id, date);
 
       const usageData = usage || {
         apiKeyId: id,
@@ -312,12 +312,12 @@ router.get(
 router.delete(
   '/:key',
   authenticate,
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { key } = req.params;
       const userId = (req as any).user?.id;
 
-      const apiKey = apiKeyStore.findByKey(key);
+      const apiKey = await apiKeyStore.findByKey(key);
       if (!apiKey) {
         throw new AppError('API key not found', 404);
       }
@@ -327,7 +327,7 @@ router.delete(
         throw new AppError('Unauthorized', 403);
       }
 
-      const deleted = deleteApiKey(key);
+      const deleted = await deleteApiKey(key);
 
       if (!deleted) {
         throw new AppError('Failed to delete API key', 500);
