@@ -29,4 +29,19 @@ router.get('/keys', async (req: Request, res: Response) => {
   }
 });
 
+// Check environment variables
+router.get('/env', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: {
+      hasMongoUri: !!process.env.MONGODB_URI,
+      mongoUriLength: process.env.MONGODB_URI?.length || 0,
+      nodeEnv: process.env.NODE_ENV,
+      allEnvKeys: Object.keys(process.env).filter(k => 
+        k.includes('MONGO') || k.includes('DATABASE')
+      )
+    }
+  });
+});
+
 export default router;
