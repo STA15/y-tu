@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { ApiKeyModel } from '../../models/apiKey.model.mongoose';
+import { database } from '../../config/database';
 
 const router = Router();
 
@@ -7,6 +8,9 @@ const router = Router();
 router.get('/keys', async (req: Request, res: Response) => {
   try {
     const mongoose = require('mongoose');
+    
+    // EXPLICITLY CONNECT TO DATABASE FIRST
+    await database.connect();
     
     // Log connection state
     const connectionState = mongoose.connection.readyState;
