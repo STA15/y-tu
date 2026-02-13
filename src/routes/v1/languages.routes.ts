@@ -98,9 +98,6 @@ router.post(
  *     summary: Get supported languages
  *     description: Returns a list of all supported languages for translation
  *     tags: [Languages]
- *     security:
- *       - ApiKeyAuth: []
- *       - BearerAuth: []
  *     responses:
  *       200:
  *         description: List of supported languages
@@ -135,17 +132,11 @@ router.post(
  *                 requestId: "req_128"
  *                 timestamp: "2023-12-21T10:30:45.123Z"
  *                 processingTime: 45
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- *       429:
- *         $ref: '#/components/responses/RateLimitError'
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.get(
   '/',
-  authenticate,
-  tieredRateLimiter,
   translationController.getSupportedLanguages.bind(translationController)
 );
 
